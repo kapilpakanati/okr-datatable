@@ -148,6 +148,20 @@ console.log('report_id', report_id);
         }
 }
 const handleStatusChangeToComplete = async(record) =>{
+
+  // Overall_Progress_A00
+  // OKR_Status
+
+  let overallProgress = await kf.api(`/form/2/${accountId}/Overall_Progress_A00?page_number=1&page_size=1000`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      "Name": record._id,
+      OKR_Status:"Completed"
+    })
+  });
   let resp = await kf.api(`/form/2/${accountId}/${dataformId}?page_number=1&page_size=1000`, {
     method: "PUT",
     headers: {
