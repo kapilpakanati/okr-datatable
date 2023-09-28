@@ -460,7 +460,7 @@ const columns = [
        
       render: (record) => (
         <div style={{ position: 'relative', display:'flex',alignItems:'start',justifyContent:'flex-start' }}>
-           {(record[objectiveOwners] === currentUser  && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses]))|| RoleName === 'Admin' && (
+           {(record[objectiveOwners] === currentUser || RoleName === 'Admin' && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) && (
               <Tooltip title="Check in">
              <Button type="link" shape="circle" onClick={() => handleCheckin(record)}>
             <Image preview={false} width={29} height={24} src={Checkin_img} />
@@ -469,7 +469,7 @@ const columns = [
                 )}
 
           
-{(record[objectiveOwners] === currentUser  && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) || RoleName === 'Admin'&& (
+{(record[objectiveOwners] === currentUser || RoleName === 'Admin' && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) && (
           <Tooltip title="Edit">
             <Button type="link" shape="circle" onClick={()=>handleEdit(record)}>
               <Image preview={false} width={29} height={24} src={edit_img} />
@@ -484,7 +484,7 @@ const columns = [
             </Button>
           </Tooltip>
           
-          {(record[objectiveOwners] === currentUser  && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) || RoleName === 'Admin' && (
+          {(record[objectiveOwners] === currentUser || RoleName === 'Admin' && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) && (
           <Dropdown
             overlay={
               <Menu>
