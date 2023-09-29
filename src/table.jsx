@@ -460,22 +460,36 @@ const columns = [
        
       render: (record) => (
         <div style={{ position: 'relative', display:'flex',alignItems:'start',justifyContent:'flex-start' }}>
-           {(record[objectiveOwners] === currentUser || RoleName === 'Admin' && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) && (
+          {RoleName === 'Admin' ? ( 
               <Tooltip title="Check in">
              <Button type="link" shape="circle" onClick={() => handleCheckin(record)}>
             <Image preview={false} width={29} height={24} src={Checkin_img} />
                 </Button>
               </Tooltip>
-                )}
-
+          ):  record[objectiveOwners] === currentUser && ['Not Started', 'On Track', 'Behind', 'At Risk'].includes(record[OKRStatuses]) ? (
+<Tooltip title="Check in">
+             <Button type="link" shape="circle" onClick={() => handleCheckin(record)}>
+            <Image preview={false} width={29} height={24} src={Checkin_img} />
+                </Button>
+              </Tooltip>
+          ):null}
           
-{(record[objectiveOwners] === currentUser || RoleName === 'Admin' && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) && (
-          <Tooltip title="Edit">
-            <Button type="link" shape="circle" onClick={()=>handleEdit(record)}>
-              <Image preview={false} width={29} height={24} src={edit_img} />
-            </Button>
-          </Tooltip>
-          )}
+{RoleName === 'Admin' ? (
+  // Display the button when RoleName is 'Admin'
+  <Tooltip title="Edit">
+    <Button type="link" shape="circle" onClick={() => handleEdit(record)}>
+      <Image preview={false} width={29} height={24} src={edit_img} />
+    </Button>
+  </Tooltip>
+) : record[objectiveOwners] === currentUser && ['Not Started', 'On Track', 'Behind', 'At Risk'].includes(record[OKRStatuses]) ? (
+  // Display the button when the second condition is met
+  <Tooltip title="Edit">
+    <Button type="link" shape="circle" onClick={() => handleEdit(record)}>
+      <Image preview={false} width={29} height={24} src={edit_img} />
+    </Button>
+  </Tooltip>
+) : null}
+
           
           
           <Tooltip title="Trend">
@@ -484,7 +498,7 @@ const columns = [
             </Button>
           </Tooltip>
           
-          {(record[objectiveOwners] === currentUser || RoleName === 'Admin' && ['Not Started', 'On Track', 'Behind','At Risk'].includes(record[OKRStatuses])) && (
+          {RoleName === 'Admin' ? (
           <Dropdown
             overlay={
               <Menu>
@@ -499,7 +513,23 @@ const columns = [
               <Image preview={false} width={29} height={24} src={more_img} />
             </Button>
           </Dropdown>
-          )}
+          ):record[objectiveOwners] === currentUser && ['Not Started', 'On Track', 'Behind', 'At Risk'].includes(record[OKRStatuses]) ? (
+            <Dropdown
+            overlay={
+              <Menu>
+                <Menu.Item key="1" onClick={() => handleClosedClick(record)}>Mark as Completed</Menu.Item>
+          <Menu.Item key="2" onClick={() => handleDroppedClick(record)}>Mark as Dropped</Menu.Item>
+        
+              </Menu>
+            }
+            trigger={['click']}
+          >
+            <Button type="link" shape="circle">
+              <Image preview={false} width={29} height={24} src={more_img} />
+            </Button>
+          </Dropdown>
+          ):null
+        }
         </div>
       ),
       
