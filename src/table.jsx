@@ -19,9 +19,10 @@ import { ReactComponent as EmptyState} from  './Images/emptystate.svg'
 import {ReactComponent as newOKR} from './Images/addOKR.svg'
 import goals from './Images/goals.png'
 import keyresultsIcon from './Images/current_kr.png'
+import FilterComponent from './filter.js';
 
 
-
+const searchDelay = 500; 
 const {Text, Title } = Typography;
 const { TreeNode } = Tree;
 
@@ -66,10 +67,12 @@ const [dataformId, setDataFromId] = useState([]);
 const [LnkdObjRptId, setLnkdObjRptId] = useState()
 const [applicationId,setApplicationId] = useState()
 const [RoleName,setRoleName] = useState()
+const [searchQuery, setSearchQuery] = useState('');
+const [searchTimeout, setSearchTimeout] = useState(null);
 
 //const [emptyicon, setemptyicon] = useState('none');
 
-const ReportApiCall = async(page, WatchparamReportID) =>{
+const ReportApiCall = async(page, WatchparamReportID, query) =>{
   let kf = window.kf
   setcurrentPageID(kf.app.page._id)
   kf.app.setVariable("OKR_status", "default") //setting it to default value to use in watch params
@@ -80,17 +83,13 @@ setRoleName(kf.user.Role.Name)
 console.log("Role " ,kf.user.Role.Name);
 setDataFromId(data_form_id)
   setcurentUser(kf.user.Email)
-  let querystring;
-    let querystring1;
-    
-    // if (filterText) {
-    //   querystring = '&q=' + filterText;
-    //   querystring1 = '&q=' + filterText;
-    // } else {
-    //   querystring = '';
-    //   querystring1 = '';
-    // }
-    console.log('WatchparamReportID inside api call function',WatchparamReportID);
+  if (query) {
+    console.log('Search query from filter : ' + query);
+    setSearchQuery(query);
+  } else {
+    console.log('No Search query from filter');
+  }
+  const queryString = searchQuery ? `&q=${searchQuery}` : '';
 
     //const applicationResponse = await kf.api('/id');
     const application_id = kf.app._id;
@@ -115,7 +114,7 @@ console.log('report_id', report_id);
     if(currentPageID == 'Copy_Team_OKR_Page_A00' ||currentPageID == 'Team_OKR_Page_A01'){
       let tabName = await kf.app.getVariable("Team_OKR_Team_Name")
       let counturl = `/form-report/2/${account_id}/${data_form_id}/${report_id}/count?$team_name=${TeamName}`
-    let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&$team_name=${TeamName}&page_number=${page}&page_size=${5}`
+    let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&$team_name=${TeamName}&page_number=${page}&page_size=${5}${queryString}`
     let countapiresponse = await window.kf.api(counturl)
     let apiresponse = await window.kf.api(url)
     setLoading(false)
@@ -123,7 +122,7 @@ console.log('report_id', report_id);
     return {countapiresponse,apiresponse}
     }else if (currentPageID =='role_executive_api_customisation_A00'){
       let counturl = `/form-report/2/${account_id}/${data_form_id}/${report_id}/count?$objective_owner_email=${currentUser}`
-      let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&$objective_owner_email=${currentUser}&page_number=${page}&page_size=${5}`
+      let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&$objective_owner_email=${currentUser}&page_number=${page}&page_size=${5}${queryString}`
       let countapiresponse = await window.kf.api(counturl)
       let apiresponse = await window.kf.api(url)
       setLoading(false)
@@ -132,7 +131,7 @@ console.log('report_id', report_id);
       }
     else if (currentPageID =='Company_OKR_page_A00'){
     let counturl = `/form-report/2/${account_id}/${data_form_id}/${report_id}/count`
-    let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&page_number=${page}&page_size=${5}`
+    let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&page_number=${page}&page_size=${5}${queryString}`
     let countapiresponse = await window.kf.api(counturl)
     let apiresponse = await window.kf.api(url)
     setLoading(false)
@@ -313,15 +312,35 @@ useEffect(()=>{
 fetchData()
     
 return ()=>{}
-},[page,WatchparamReportID, OnOKRSave,TeamName,watchParamOKRStatus])
+},[page,WatchparamReportID, OnOKRSave,TeamName,watchParamOKRStatus,searchQuery])
 
 
 // setTimeout(() => {
 //   setLoading(false);
 //   console.info("in timeout");
 // }, 300);
+const handlePageChange = (page) => {
+  console.log('Pagination change to page:', page);
+  setPage(page);
+  setLoading(true);
+  ReportApiCall(page, searchQuery);
+};
+const handleSearch = (query) => {
+  console.log('Search from filter:', query);
+  setSearchQuery(query);
+  setPage(1);
+  setLoading(true);
 
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
 
+  setSearchTimeout(
+    setTimeout(() => {
+      ReportApiCall(1, query);
+    }, searchDelay)
+  );
+};
 const columns = [
     {
       title: 'Objective ID',
@@ -819,14 +838,15 @@ return (
   </Button></Col>
 )}
   </Row>
-<Space wrap>
-<Button style={{left:"10px"}} type={type} shape="round"  size={"small"} onClick={ShowActive}>
+<div style={ {display:"flex",justifyContent:"space-between"}}>
+  <div>
+<Button style={{left:"10px", marginRight:"3px"}} type={type} shape="round"  size={"small"} onClick={ShowActive}>
 Active
 </Button>
- <Button style={{left:"10px"}}  type={advtype} shape="round"   size={"small"} onClick={ShowComplete}>
+ <Button style={{left:"10px", marginLeft:"3px"}}  type={advtype} shape="round"   size={"small"} onClick={ShowComplete}>
  Completed 
 </Button>
-
+</div>
 {/* <div style={{display:"flex",justifyContent:"end"}}>
     <Space.Compact style={{width:'46%'}}size="large">
     <Input
@@ -835,9 +855,12 @@ Active
       
     </Space.Compact>
     </div> */}
+<div style={{align:'left', marginBottom: '10px', position: 'relative', display:'flex',alignItems:'start',justifyContent:'flex-start' }}>
 
- </Space>
-
+<FilterComponent filterText={searchQuery} onFilter={(e) => handleSearch(e.target.value)} />
+</div>
+ </div>
+ 
 
 <Table 
 rowClassName="bg-red"
@@ -1084,9 +1107,7 @@ expandIcon:  ({ expanded, onExpand, record }) => {
       current={page}
       defaultPageSize={5}
       total={count}
-      onChange={(page) => {
-        setPage(page);
-      }}
+      onChange={handlePageChange}
       showTotal={(total, range) => `Showing ${range[0]}-${range[1]} out of ${total} items`}
     />
   )}
