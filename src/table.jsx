@@ -69,6 +69,8 @@ const [applicationId,setApplicationId] = useState()
 const [RoleName,setRoleName] = useState()
 const [searchQuery, setSearchQuery] = useState('');
 const [searchTimeout, setSearchTimeout] = useState(null);
+const [Weightage,setWeightage] = useState()
+const [RequiredWeightage,setRequiredWeigtage] = useState()
 
 //const [emptyicon, setemptyicon] = useState('none');
 
@@ -113,6 +115,9 @@ console.log('report_id', report_id);
   try{
     if(currentPageID == 'Copy_Team_OKR_Page_A00' ||currentPageID == 'Team_OKR_Page_A01'){
       let tabName = await kf.app.getVariable("Team_OKR_Team_Name")
+      if(!TeamName){
+        TeamName= " "
+      }
       let counturl = `/form-report/2/${account_id}/${data_form_id}/${report_id}/count?$team_name=${TeamName}`
     let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&$team_name=${TeamName}&page_number=${page}&page_size=${5}${queryString}`
     let countapiresponse = await window.kf.api(counturl)
@@ -129,14 +134,19 @@ console.log('report_id', report_id);
       setemptyicon('block');
       return {countapiresponse,apiresponse}
       }
-    else if (currentPageID =='Company_OKR_page_A00'){
-    let counturl = `/form-report/2/${account_id}/${data_form_id}/${report_id}/count`
-    let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&page_number=${page}&page_size=${5}${queryString}`
-    let countapiresponse = await window.kf.api(counturl)
-    let apiresponse = await window.kf.api(url)
-    setLoading(false)
-    setemptyicon('block');
-    return {countapiresponse,apiresponse}
+      else if (currentPageID === 'Company_OKR_page_A00') {
+        let counturl = `/form-report/2/${account_id}/${data_form_id}/${report_id}/count`
+        let url = `/form-report/2/${account_id}/${data_form_id}/${report_id}?_application_id=${application_id}&page_number=${page}&page_size=${5}${queryString}`
+    
+        // Start both API calls simultaneously
+        const [counturlPromise, urlPromise] = await Promise.all([
+            window.kf.api(counturl),
+            window.kf.api(url)
+        ]);
+    
+        setLoading(false);
+        setemptyicon('block');
+        return { countapiresponse: counturlPromise, apiresponse: urlPromise };
     }
     
         }catch (error){
@@ -286,6 +296,8 @@ useEffect(()=>{
     const DueDate = apiresponse.Columns.find(col => col.FieldId === 'Due_Date_2').Id
     const TimeFrame = apiresponse.Columns.find(col => col.FieldId === 'Timeframe_text').Id
     const AverageProgress = apiresponse.Columns.find(col => col.FieldId === 'Average_Progress').Id
+    const Required_Weigtage = apiresponse.Columns.find(col => col.FieldId === 'Is_Weightage_Needed_for_Key_Result_').Id
+    const Weightage_Progress = apiresponse.Columns.find(col => col.FieldId === 'Weighted_Actuals_Text').Id
     const OKRStatus = apiresponse.Columns.find(col => col.FieldId === 'Status_Marker_text').Id
     const ObjectiveOwners = apiresponse.Columns.find(col => col.FieldId === 'Objective_Owner_Email').Id
     const OKRstatus = apiresponse.Columns.find(col => col.FieldId === 'OKR_Status_1').Id
@@ -300,7 +312,8 @@ useEffect(()=>{
     setTimeFrames(TimeFrame)
     setAverageProgression(AverageProgress)
     setOKRStatuses(OKRStatus)
-    
+    setWeightage(Weightage_Progress)
+    setRequiredWeigtage(Required_Weigtage)
     setExpandedRowKeys([]);
 
 } catch (error){
@@ -413,13 +426,26 @@ const columns = [
     responsive: ['md'],
   },
   {
+    // title: 'progress',
+    // //dataIndex: 'progress',
+    // width:'160px',
+    // key: 'progress',
+    // render: (text,record) => <> <div style={{ width: 120 ,marginTop:"2px", fontSize: "12px",fontFamily: "Inter",fontWeight: "400", color: "#080E19"}}>
+    //   <Progress strokeColor="#4AA147" percent={record[Weightage]??0}  /></div>
+    //    </>,
+    // responsive: ['md'],
     title: 'progress',
-    //dataIndex: 'progress',
-    width:'150px',
-    key: 'progress',
-    render: (text,record) => <> <div style={{ width: 120 ,marginTop:"2px", fontSize: "12px",fontFamily: "Inter",fontWeight: "400", color: "#080E19"}}>
-      <Progress strokeColor="#4AA147" percent={record[AverageProgression]}  /></div> </>,
-    responsive: ['md'],
+width: '160px',
+key: 'progress',
+render: (text, record) => (
+  <>
+    <div style={{ width: 120, marginTop: "2px", fontSize: "12px", fontFamily: "Inter", fontWeight: "400", color: "#080E19" }}>
+      <Progress strokeColor="#4AA147" percent={record[AverageProgression] ?? 0} />  
+    </div>
+  </>
+),
+responsive: ['md'],
+
      
   },
   {
@@ -562,7 +588,7 @@ const ShowActive = async() => {
   setType("primary");
   advsetType("default");
   console.log('currentPageID',currentPageID);
-  if(currentPageID ==="role_executive_api_customisation_A00"){
+  if(currentPageID ==="role_executive_api_customisation_A54"){
    kf.app.setVariable("report_id", "Completed_manager_OKR_report_A00");
 }else if(currentPageID === "Copy_Team_OKR_Page_A00"){
   console.log('setting report to','Team_OKRs_A00');
@@ -575,7 +601,7 @@ const ShowComplete = async () => {
   setType("default");
   advsetType("primary");
   console.log('currentPageID',currentPageID);
-  if(currentPageID ==="role_executive_api_customisation_A00"){
+  if(currentPageID ==="role_executive_api_customisation_A54"){
      kf.app.setVariable("report_id", "Manager_Completed_OKRs_A00");
   }else if(currentPageID === "Copy_Team_OKR_Page_A00"){
     console.log('setting report to','Team_OKR_Closed_A00');
@@ -669,9 +695,9 @@ const handleEdit=async(record)=>{
       "Name": record._id,
       Checkin_visiblity: "No",
       // Is_field_to_be_visible: "Yes",
-      Is_OKR_section_to_be_visible: currentPageID === "role_executive_api_customisation_A00" || currentPageID === "Copy_Team_OKR_Page_A00" ? "Yes" : undefined,
-      Is_Key_Result_Column_to_be_visible: currentPageID === "role_executive_api_customisation_A00" || currentPageID === "Copy_Team_OKR_Page_A00" ? "Yes" : undefined,
-      Is_Team_Name_to_be_visbile: currentPageID === "role_executive_api_customisation_A00" || currentPageID === "Copy_Team_OKR_Page_A00" ? "Yes" : undefined
+      Is_OKR_section_to_be_visible: currentPageID === "role_executive_api_customisation_A54" || currentPageID === "Copy_Team_OKR_Page_A00" ? "Yes" : undefined,
+      Is_Key_Result_Column_to_be_visible: currentPageID === "role_executive_api_customisation_A54" || currentPageID === "Copy_Team_OKR_Page_A00" ? "Yes" : undefined,
+      Is_Team_Name_to_be_visbile: currentPageID === "role_executive_api_customisation_A54" || currentPageID === "Copy_Team_OKR_Page_A00" ? "Yes" : undefined
     })
   });
 
@@ -692,7 +718,7 @@ const handleEdit=async(record)=>{
 
     });
   }
-  else if (currentPageID === 'role_executive_api_customisation_A00') {
+  else if (currentPageID === 'role_executive_api_customisation_A54') {
     let kf = window.kf;
     await kf.app.page.openPopup("Popup_rGXjfqqw2", {
 
@@ -724,7 +750,7 @@ const handleTrends = async(record)=>{
 
     });
   }
-  else if (currentPageID === 'role_executive_api_customisation_A00') {
+  else if (currentPageID === 'role_executive_api_customisation_A54') {
     await kf.app.page.openPopup("Popup_hMXhGIzx7", {
 
       instance_id: record._id,
@@ -824,7 +850,7 @@ return (
       <Space>   <Image  preview = {false}  src={goals} style={{marginTop:'6px'}} height={16} width={16}></Image>
      <Title level={5} style={{fontFamily:"Inter",marginTop:"13%"}}>Objectives <span style={{color:"gray",fontSize:"12px"}}>({count} items)</span></Title>
      </Space></Col>
-     {currentPageID !== "role_executive_api_customisation_A00" && RoleName !== "Employee" &&(
+     {currentPageID !== "role_executive_api_customisation_A54" && RoleName !== "Employee" &&(
      <Col span={12} align="right"> 
      
   <Button
@@ -905,8 +931,10 @@ expandIcon:  ({ expanded, onExpand, record }) => {
         // // Make additional API calls for each keyResult
         const additionalDataPromises = keyResults.map(async (keyResult) => {
           try {
+            const encodedKeyResult = encodeURIComponent(keyResult.Key_Results_1);
+
             const response = await kf.api(
-              `/form-report/2/${accountId}/${dataformId}/${LnkdObjRptId}/count?_application_id=${applicationId}&$parent_objective_id=${record[ObjectiveIDs]}&$parent_key_result_text=${keyResult.Key_Results_1}`
+              `/form-report/2/${accountId}/${dataformId}/${LnkdObjRptId}/count?_application_id=${applicationId}&$parent_objective_id=${record[ObjectiveIDs]}&$parent_key_result_text=${encodedKeyResult}`
             );
   
             console.log('Additional data API response:', response);
@@ -975,7 +1003,7 @@ expandIcon:  ({ expanded, onExpand, record }) => {
 </ul>
   <div style={{height:"32px",width:"90%",left:"3%",position:"relative",background:"#F0F3F7",padding:"6px 24px 6px 24px",marginBottom:"10px",borderRadius:"8px"}}>
   <img src={keyresultsIcon} width={25} height={25} style={{ verticalAlign: 'middle', padding: '6px', top: '-3px', position: 'relative' }}></img>
-  <Tooltip placement="topLeft" title={keyResult.Key_Results_1}> <div style={{width: '25%', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', position: 'relative', top: '4px' }}>{keyResult.Key_Results_1}</div></Tooltip>
+  <Tooltip placement="topLeft" title={keyResult.Key_Results_1}> <div style={{width: '22%', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', position: 'relative', top: '4px' }}>{keyResult.Key_Results_1}</div></Tooltip>
     <div style={{ width: '16%', display: 'inline-block', position: 'relative', top: '-3px',color:'#61656C' }}>
   Target: 
   <span style={{ color: 'black' }}>{keyResult.Metrics === 'USD' ? (
@@ -1009,7 +1037,7 @@ expandIcon:  ({ expanded, onExpand, record }) => {
   </span>
 </div>
 
-<div style={{ width: '16%', display: 'inline-block', position: 'relative', top: '-3px',color: '#61656C' }}>
+<div style={{ width: '15%', display: 'inline-block', position: 'relative', top: '-3px',color: '#61656C' }}>
   Actual: 
   <span style={{ color: 'black' }}>{keyResult.Metrics === 'USD' ? (
     // Display the dollar symbol after the target value for 'USD'
@@ -1039,13 +1067,19 @@ expandIcon:  ({ expanded, onExpand, record }) => {
       maximumFractionDigits: 0,
     }).format(Number(keyResult.Targets))}`
   )}</span>
-</div>  
-<div style={{ width: '18%', display: 'inline-block', position: 'relative', top: '-3px',color: '#61656C' }}>Progress:   <span style={{ color: 'black' }}>
-{keyResult.KR_percentage}%</span></div>
-
+  
+</div> 
+<div style={{ width: '15%', display: 'inline-block', position: 'relative', top: '-3px',color: '#61656C' }}>Progress:   <span style={{ color: 'black' }}>
+{keyResult.Weighted_Actuals}%</span></div>
+{keyResult.Is_Weightage_needed === 'Weight Needed' ? (
+  <div style={{ width: '15%', display: 'inline-block', position: 'relative', top: '-3px', color: '#61656C' }}>
+    Weightage: 
+    <span style={{ color: 'black' }}>{keyResult.Weightage}%</span>
+  </div>
+) : null}
 {LinkedObjectiveCounts[keyResult.Key_Results_1] !== undefined && LinkedObjectiveCounts[keyResult.Key_Results_1] !== 0 && (
 
-            <div style={{ textDecoration: 'underline', cursor: 'pointer', width: '16%', display: 'inline-block', position: 'relative', top: '-3px', color: '#61656C' }}
+            <div style={{ textDecoration: 'underline', cursor: 'pointer', width: '11%', display: 'inline-block', position: 'relative', top: '-3px', color: '#61656C' }}
             onClick={() => {console.log('clicked linked ojectives, ', record._id);
             kf.app.setVariable("linkedObjectiveId", record[ObjectiveIDs])
             
